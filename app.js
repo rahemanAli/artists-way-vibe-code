@@ -608,6 +608,23 @@ const App = () => {
         return html`<div style=${{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>`;
     }
 
+    const handleDebugClick = async () => {
+        if (!user) return alert("Not logged in");
+        try {
+            alert("Fetching cloud data...");
+            const q = query(collection(db, 'users', user.uid, 'data'));
+            const snapshot = await getDocs(q);
+            let msg = `Cloud Data (${snapshot.size} items):\n`;
+            snapshot.forEach(doc => {
+                const val = JSON.stringify(doc.data().value);
+                msg += `${doc.id}: ${val.substring(0, 20)}...\n`;
+            });
+            alert(msg);
+        } catch (e) {
+            alert("Fetch failed: " + e.message);
+        }
+    };
+
     return html`
         <div>
             ${route.view === 'landing' && html`<${LandingPage} onStart=${handleStart} onLogin=${login} user=${user} />`}
@@ -616,11 +633,12 @@ const App = () => {
             ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             
-            <div style=${{
+            <div onClick=${handleDebugClick} style=${{
             position: 'fixed', bottom: 4, left: 0, right: 0,
-            textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', pointerEvents: 'none'
+            textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)',
+            cursor: 'pointer', zIndex: 9999
         }}>
-                v1.3 | Today: ${new Date().toISOString().split('T')[0]} | ${user ? user.email : 'Offline'}
+                v1.4 | Today: ${new Date().toISOString().split('T')[0]} | ${user ? user.email : 'Offline'} (Tap for Debug)
             </div>
         </div>
     `;
