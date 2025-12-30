@@ -2,6 +2,9 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import { WEEKS_DATA, START_DATE } from './data.js';
+import { auth, db, googleProvider } from './firebase.js';
+import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 const html = htm.bind(React.createElement);
 
@@ -14,22 +17,90 @@ const BookOpen = () => html`<i data-lucide="book-open"></i>`;
 const Edit3 = () => html`<i data-lucide="edit-3"></i>`;
 const CalendarPlus = () => html`<i data-lucide="calendar-plus"></i>`;
 const ArrowRight = () => html`<i data-lucide="arrow-right"></i>`;
+const LogOutIcon = () => html`<i data-lucide="log-out"></i>`;
+const UserIcon = () => html`<i data-lucide="user"></i>`;
 
 // --- Utils ---
 const getStorageKey = (key) => `artist_way_${key}`;
 
-function useStickyState(defaultValue, key) {
+// Hook for Auth
+function useAuth() {
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const unsubscribe = onAuthStateChanged(auth, (u) => {
+            setUser(u);
+            setLoading(false);
+        });
+        return unsubscribe;
+    }, []);
+
+    const login = async () => {
+        try {
+            await signInWithPopup(auth, googleProvider);
+        } catch (error) {
+            console.error("Login failed", error);
+            alert("Login failed: " + error.message);
+        }
+    };
+
+    const logout = () => signOut(auth);
+
+    return { user, loading, login, logout };
+}
+
+// Hook for Data Sync
+function useSmartState(defaultValue, key, user) {
+    // 1. Initialize from LocalStorage (fast/offline)
     const [value, setValue] = useState(() => {
         const stickyValue = window.localStorage.getItem(getStorageKey(key));
         return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
     });
+
+    // 2. Sync from Firestore
     useEffect(() => {
-        window.localStorage.setItem(getStorageKey(key), JSON.stringify(value));
-    }, [key, value]);
-    return [value, setValue];
+        if (!user) return;
+
+        const docRef = doc(db, 'users', user.uid, 'data', key);
+        const unsubscribe = onSnapshot(docRef, (snap) => {
+            if (snap.exists()) {
+                const remoteValue = snap.data().value;
+                // Only update if different JSON string to avoid loops/unnecessary renders
+                // (Simple comparison works for this app's data types)
+                if (JSON.stringify(remoteValue) !== JSON.stringify(value)) {
+                    setValue(remoteValue);
+                    // Keep local storage in sync with cloud
+                    window.localStorage.setItem(getStorageKey(key), JSON.stringify(remoteValue));
+                }
+            }
+        }, (err) => console.error("Sync error", err));
+
+        return () => unsubscribe();
+    }, [user, key]); // Only re-sub if user or key changes
+
+    // 3. Setter wrapper
+    const setSmartValue = (newValue) => {
+        const valueToStore = newValue instanceof Function ? newValue(value) : newValue;
+
+        // Update State
+        setValue(valueToStore);
+
+        // Update LocalStorage
+        window.localStorage.setItem(getStorageKey(key), JSON.stringify(valueToStore));
+
+        // Update Firestore
+        if (user) {
+            setDoc(doc(db, 'users', user.uid, 'data', key), { value: valueToStore }, { merge: true })
+                .catch(e => console.error("Save failed", e));
+        }
+    };
+
+    return [value, setSmartValue];
 }
 
 function getWordCount(text) {
+    if (!text) return 0;
     return text.trim().split(/\s+/).filter(w => w.length > 0).length;
 }
 
@@ -75,18 +146,25 @@ const ProgressRing = ({ radius, stroke, progress }) => {
     `;
 };
 
-const NavBar = ({ onBack, title }) => html`
-    <div style=${{ display: 'flex', alignItems: 'center', marginBottom: '24px' }}>
-        ${onBack ? html`
-            <div class="btn btn-sm btn-outline" onClick=${onBack} style=${{ marginRight: '24px' }}>
-                <${ArrowLeft} size=${18} /> Back
+const NavBar = ({ onBack, title, user, onLogout }) => html`
+    <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+        <div style=${{ display: 'flex', alignItems: 'center' }}>
+            ${onBack ? html`
+                <div class="btn btn-sm btn-outline" onClick=${onBack} style=${{ marginRight: '24px' }}>
+                    <${ArrowLeft} size=${18} /> Back
+                </div>
+            ` : null}
+            ${title && html`<h2 style=${{ margin: 0 }}>${title}</h2>`}
+        </div>
+        ${user && onLogout && html`
+            <div class="btn btn-sm btn-ghost" onClick=${onLogout} title="Sign Out">
+                <${LogOutIcon} size=${20} />
             </div>
-        ` : null}
-        ${title && html`<h2 style=${{ margin: 0 }}>${title}</h2>`}
+        `}
     </div>
 `;
 
-const LandingPage = ({ onStart }) => html`
+const LandingPage = ({ onStart, onLogin, user }) => html`
     <div class="container animate-fade-in" style=${{ justifyContent: 'center' }}>
         <div class="landing-hero">
             <h1 style=${{ fontSize: '4rem', marginBottom: '1.5rem', background: 'linear-gradient(to right, #fff, #9d7fe6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -117,16 +195,29 @@ const LandingPage = ({ onStart }) => html`
                 </div>
             </div>
 
-            <button class="btn btn-primary btn-lg" onClick=${onStart}>
-                Start Your Journey <${ArrowRight} size=${24} />
-            </button>
+            <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                ${!user ? html`
+                     <button class="btn btn-primary btn-lg" onClick=${onLogin} style=${{ background: '#4285F4', borderColor: '#4285F4', display: 'flex', gap: '12px' }}>
+                        <${UserIcon} size=${24} /> Sign in with Google to Sync
+                    </button>
+                    <div style=${{ opacity: 0.6, fontSize: '0.9rem' }}> or </div>
+                    <button class="btn btn-outline" onClick=${onStart}>
+                        Continue Offline
+                    </button>
+                ` : html`
+                    <button class="btn btn-primary btn-lg" onClick=${onStart}>
+                        Go to Dashboard <${ArrowRight} size=${24} />
+                    </button>
+                    <div style=${{ color: 'var(--success-color)' }}>Logged in as ${user.displayName || user.email}</div>
+                `}
+            </div>
         </div>
     </div>
 `;
 
-const DailyEditor = ({ dateStr, onBack }) => {
-    const [content, setContent] = useStickyState("", `journal_${dateStr}`);
-    const [done, setDone] = useStickyState(false, `mp_${dateStr}`);
+const DailyEditor = ({ dateStr, onBack, user }) => {
+    const [content, setContent] = useSmartState("", `journal_${dateStr}`, user);
+    const [done, setDone] = useSmartState(false, `mp_${dateStr}`, user);
     const [showSuccess, setShowSuccess] = useState(false);
 
     // Word count logic
@@ -137,8 +228,6 @@ const DailyEditor = ({ dateStr, onBack }) => {
 
     const handleSubmit = () => {
         if (canSubmit) {
-            // Explicitly save immediately to avoid race condition with unmount
-            window.localStorage.setItem(getStorageKey(`mp_${dateStr}`), 'true');
             setDone(true);
             setShowSuccess(true);
             setTimeout(() => {
@@ -219,7 +308,7 @@ const DailyEditor = ({ dateStr, onBack }) => {
     `;
 };
 
-const CalendarView = ({ onSelectDay, onBack }) => {
+const CalendarView = ({ onSelectDay, onBack, user }) => {
     const weeks = useMemo(() => {
         const result = [];
         for (let w = 0; w < 12; w++) {
@@ -234,9 +323,20 @@ const CalendarView = ({ onSelectDay, onBack }) => {
 
     const todayStr = new Date().toISOString().split('T')[0];
 
+    // Note: For Calendar View, we are reading individual days. 
+    // This is inefficient with the current hook structure (84 hooks?).
+    // A better approach for the future is to sync the whole progress map.
+    // For now, we will rely on LocalStorage for the overview to keep it fast, 
+    // assuming the individual "DailyEditor" opens will sync the specific days.
+    // OR we could fetch 'all progress' on mount.
+    // Limitation alert: Calendar might not show completion from phone immediately until you view the day.
+    // But since `useSmartState` writes to localStorage, if we visited the day it's there.
+    // For sync: Ideally we need a `useAllProgress` hook.
+    // Let's stick to localStorage for rendering the grid for speed, assuming user mostly works on "today".
+
     return html`
         <div class="container animate-fade-in">
-            <${NavBar} onBack=${onBack} title="12-Week Journey" />
+            <${NavBar} onBack=${onBack} title="12-Week Journey" user=${user} />
             
             <div style=${{ display: 'grid', gap: '32px' }}>
                 ${weeks.map(week => html`
@@ -270,7 +370,7 @@ const CalendarView = ({ onSelectDay, onBack }) => {
     `;
 };
 
-const Dashboard = ({ onNavigate }) => {
+const Dashboard = ({ onNavigate, user, onLogout }) => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const diffTime = Math.abs(today - START_DATE);
@@ -287,17 +387,19 @@ const Dashboard = ({ onNavigate }) => {
     const progressPercent = (completedCount / 84) * 100;
 
     const weekData = WEEKS_DATA.find(w => w.id === currentWeekNum) || WEEKS_DATA[0];
-    const [morningPagesDone] = useStickyState(false, `mp_${todayStr}`);
+    const [morningPagesDone] = useSmartState(false, `mp_${todayStr}`, user);
 
     return html`
         <div class="container animate-fade-in dashboard-layout">
             <header class="dashboard-header">
                 <div>
                     <h1>The Artist's Way</h1>
-                    <p>Welcome back to your spiritual path.</p>
+                    <p>Welcome back, ${user ? (user.displayName || 'Creator') : 'Creator'}.</p>
                 </div>
-                <div style=${{ textAlign: 'right', display: 'none', display: 'md:block' }}>
-                    <span style=${{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>Day ${diffDays} / 84</span>
+                <div>
+                    ${user && html`
+                        <div class="btn btn-sm btn-ghost" onClick=${onLogout}>Sign Out</div>
+                    `}
                 </div>
             </header>
 
@@ -364,9 +466,9 @@ const Dashboard = ({ onNavigate }) => {
     `;
 };
 
-const WeekView = ({ weekId, onBack }) => {
+const WeekView = ({ weekId, onBack, user }) => {
     const weekData = WEEKS_DATA.find(w => w.id === parseInt(weekId)) || WEEKS_DATA[0];
-    const [tasksState, setTasksState] = useStickyState({}, `tasks_week_${weekData.id}`);
+    const [tasksState, setTasksState] = useSmartState({}, `tasks_week_${weekData.id}`, user);
 
     const info = getDayInfo((weekData.id - 1) * 7);
     const reminderUrl = generateGoogleCalendarUrl(
@@ -379,7 +481,7 @@ const WeekView = ({ weekId, onBack }) => {
 
     return html`
         <div class="container animate-fade-in">
-             <${NavBar} onBack=${onBack} title=${`Week ${weekData.id}: ${weekData.theme}`} />
+             <${NavBar} onBack=${onBack} title=${`Week ${weekData.id}: ${weekData.theme}`} user=${user} />
             
              <div class="card">
                 <blockquote style=${{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid var(--border-color)', fontSize: '1.4rem', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#fff' }}>
@@ -418,9 +520,16 @@ const WeekView = ({ weekId, onBack }) => {
 };
 
 const App = () => {
-    // Always show landing page on refresh/new visit
-    const [hasOnboarded, setHasOnboarded] = useState(false);
+    // Auth State
+    const { user, loading, login, logout } = useAuth();
+
+    // Routing
     const [route, setRoute] = useState({ view: 'landing', params: null });
+
+    // Always show landing page on refresh/new visit unless logged in logic
+    // Actually, let's keep the existing flow: Landing -> Dashboard
+    // But if logged in, we land on dashboard?
+    // Let's keep it manual start for now to show the nice landing page.
 
     const navigate = (view, params = null) => {
         setRoute({ view, params });
@@ -428,7 +537,6 @@ const App = () => {
     };
 
     const handleStart = () => {
-        setHasOnboarded(true);
         navigate('dashboard');
     }
 
@@ -436,13 +544,17 @@ const App = () => {
         if (window.lucide) window.lucide.createIcons();
     }, [route]);
 
+    if (loading) {
+        return html`<div style=${{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>`;
+    }
+
     return html`
         <div>
-            ${route.view === 'landing' && html`<${LandingPage} onStart=${handleStart} />`}
-            ${route.view === 'dashboard' && html`<${Dashboard} onNavigate=${navigate} />`}
-            ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} />`}
-            ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} />`}
-            ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} />`}
+            ${route.view === 'landing' && html`<${LandingPage} onStart=${handleStart} onLogin=${login} user=${user} />`}
+            ${route.view === 'dashboard' && html`<${Dashboard} onNavigate=${navigate} user=${user} onLogout=${logout} />`}
+            ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} user=${user} />`}
+            ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} />`}
+            ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} />`}
         </div>
     `;
 };
