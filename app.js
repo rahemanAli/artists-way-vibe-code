@@ -151,12 +151,18 @@ function formatDate(date) {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function getLocalYMD(date) {
+    const offset = date.getTimezoneOffset();
+    const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+    return localDate.toISOString().split('T')[0];
+}
+
 function getDayInfo(dayIndex) { // 0-based index
     const date = new Date(START_DATE);
     date.setDate(date.getDate() + dayIndex);
     const weekNum = Math.floor(dayIndex / 7) + 1;
     const dayNum = (dayIndex % 7) + 1;
-    return { date, weekNum, dayNum, dateStr: date.toISOString().split('T')[0] };
+    return { date, weekNum, dayNum, dateStr: getLocalYMD(date) };
 }
 
 function generateGoogleCalendarUrl(title, details, date) {
@@ -371,7 +377,7 @@ const CalendarView = ({ onSelectDay, onBack, user, syncStatus }) => {
         return result;
     }, []);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalYMD(new Date());
 
     // Note: For Calendar View, we are reading individual days. 
     // This is inefficient with the current hook structure (84 hooks?).
@@ -422,7 +428,7 @@ const CalendarView = ({ onSelectDay, onBack, user, syncStatus }) => {
 
 const Dashboard = ({ onNavigate, user, onLogout, syncStatus }) => {
     const today = new Date();
-    const todayStr = today.toISOString().split('T')[0];
+    const todayStr = getLocalYMD(today);
     const diffTime = Math.abs(today - START_DATE);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const currentWeekNum = Math.min(12, Math.max(1, Math.ceil(diffDays / 7)));
@@ -638,7 +644,7 @@ const App = () => {
             textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)',
             cursor: 'pointer', zIndex: 9999
         }}>
-                v1.4 | Today: ${new Date().toISOString().split('T')[0]} | ${user ? user.email : 'Offline'} (Tap for Debug)
+                v1.5 | Today: ${getLocalYMD(new Date())} | ${user ? user.email : 'Offline'} (Tap for Debug)
             </div>
         </div>
     `;
