@@ -60,15 +60,16 @@ function useGlobalSync(user) {
         console.log("Starting global sync...");
         const q = query(collection(db, 'users', user.uid, 'data'));
 
-        // One-time fetch on login to hydration LocalStorage
         getDocs(q).then((snapshot) => {
             snapshot.forEach((doc) => {
-                const key = doc.id; // e.g., 'mp_2025-12-31'
+                const key = doc.id;
                 const val = JSON.stringify(doc.data().value);
                 window.localStorage.setItem(getStorageKey(key), val);
             });
-            console.log("Global sync complete. LocalStorage updated.");
-            setSynced(true); // Trigger re-render of components relying on storage
+            console.log("Global sync complete.");
+            setSynced(true);
+            // Force a storage event to update other tabs/hooks if needed? 
+            // Or just rely on the component re-rendering from setSynced(true)
         }).catch(err => console.error("Global sync failed:", err));
 
     }, [user]);
@@ -78,11 +79,19 @@ function useGlobalSync(user) {
 
 // Hook for Data Sync
 function useSmartState(defaultValue, key, user) {
-    // 1. Initialize from LocalStorage (fast/offline)
+    // 1. Initialize from LocalStorage
     const [value, setValue] = useState(() => {
         const stickyValue = window.localStorage.getItem(getStorageKey(key));
         return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
     });
+
+    // Keep a ref to the current value to avoid stale closures in onSnapshot
+    const valueRef = useRef(value);
+
+    // Update ref whenever value changes
+    useEffect(() => {
+        valueRef.current = value;
+    }, [value]);
 
     // 2. Sync from Firestore
     useEffect(() => {
@@ -90,35 +99,43 @@ function useSmartState(defaultValue, key, user) {
 
         const docRef = doc(db, 'users', user.uid, 'data', key);
         const unsubscribe = onSnapshot(docRef, (snap) => {
+            // Ignore updates that are just our own local writes echoing back
+            if (snap.metadata.hasPendingWrites) return;
+
             if (snap.exists()) {
                 const remoteValue = snap.data().value;
-                // Only update if different JSON string to avoid loops/unnecessary renders
-                // (Simple comparison works for this app's data types)
-                if (JSON.stringify(remoteValue) !== JSON.stringify(value)) {
+                // Only update if truly different from what we currently have
+                // This prevents overwriting our unsaved local work with old server data
+                if (JSON.stringify(remoteValue) !== JSON.stringify(valueRef.current)) {
+                    console.log(`Remote update for ${key}`, remoteValue);
                     setValue(remoteValue);
-                    // Keep local storage in sync with cloud
                     window.localStorage.setItem(getStorageKey(key), JSON.stringify(remoteValue));
                 }
             }
         }, (err) => console.error("Sync error", err));
 
         return () => unsubscribe();
-    }, [user, key]); // Only re-sub if user or key changes
+    }, [user, key]);
 
     // 3. Setter wrapper
     const setSmartValue = (newValue) => {
         const valueToStore = newValue instanceof Function ? newValue(value) : newValue;
 
-        // Update State
         setValue(valueToStore);
-
-        // Update LocalStorage
         window.localStorage.setItem(getStorageKey(key), JSON.stringify(valueToStore));
 
-        // Update Firestore
         if (user) {
+            window.dispatchEvent(new CustomEvent('sync-status', { detail: 'saving' }));
             setDoc(doc(db, 'users', user.uid, 'data', key), { value: valueToStore }, { merge: true })
-                .catch(e => console.error("Save failed", e));
+                .then(() => {
+                    window.dispatchEvent(new CustomEvent('sync-status', { detail: 'saved' }));
+                    setTimeout(() => window.dispatchEvent(new CustomEvent('sync-status', { detail: 'idle' })), 2000);
+                })
+                .catch(e => {
+                    console.error("Save failed", e);
+                    window.dispatchEvent(new CustomEvent('sync-status', { detail: 'error' }));
+                    alert("Sync Error: " + e.message);
+                });
         }
     };
 
@@ -598,6 +615,13 @@ const App = () => {
             ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
+            
+            <div style=${{
+            position: 'fixed', bottom: 4, left: 0, right: 0,
+            textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', pointerEvents: 'none'
+        }}>
+                v1.2 | Today: ${new Date().toISOString().split('T')[0]} | ${user ? user.email : 'Offline'}
+            </div>
         </div>
     `;
 };
