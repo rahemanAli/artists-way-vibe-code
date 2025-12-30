@@ -172,7 +172,7 @@ const ProgressRing = ({ radius, stroke, progress }) => {
     `;
 };
 
-const NavBar = ({ onBack, title, user, onLogout }) => html`
+const NavBar = ({ onBack, title, user, onLogout, syncStatus }) => html`
     <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style=${{ display: 'flex', alignItems: 'center' }}>
             ${onBack ? html`
@@ -182,11 +182,18 @@ const NavBar = ({ onBack, title, user, onLogout }) => html`
             ` : null}
             ${title && html`<h2 style=${{ margin: 0 }}>${title}</h2>`}
         </div>
-        ${user && onLogout && html`
-            <div class="btn btn-sm btn-ghost" onClick=${onLogout} title="Sign Out">
-                <${LogOutIcon} size=${20} />
-            </div>
-        `}
+        <div style=${{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            ${user && html`
+                <div style=${{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    ${syncStatus === 'saving' && html`<span class="animate-pulse">Saving...</span>`}
+                    ${syncStatus === 'saved' && html`<span style=${{ color: 'var(--success-color)' }}>Synced</span>`}
+                    ${syncStatus === 'error' && html`<span style=${{ color: '#ff4444' }}>Sync Error</span>`}
+                </div>
+                <div class="btn btn-sm btn-ghost" onClick=${onLogout} title="Sign Out">
+                    <${LogOutIcon} size=${20} />
+                </div>
+            `}
+        </div>
     </div>
 `;
 
@@ -334,7 +341,7 @@ const DailyEditor = ({ dateStr, onBack, user }) => {
     `;
 };
 
-const CalendarView = ({ onSelectDay, onBack, user }) => {
+const CalendarView = ({ onSelectDay, onBack, user, syncStatus }) => {
     const weeks = useMemo(() => {
         const result = [];
         for (let w = 0; w < 12; w++) {
@@ -362,7 +369,7 @@ const CalendarView = ({ onSelectDay, onBack, user }) => {
 
     return html`
         <div class="container animate-fade-in">
-            <${NavBar} onBack=${onBack} title="12-Week Journey" user=${user} />
+            <${NavBar} onBack=${onBack} title="12-Week Journey" user=${user} syncStatus=${syncStatus} />
             
             <div style=${{ display: 'grid', gap: '32px' }}>
                 ${weeks.map(week => html`
@@ -396,7 +403,7 @@ const CalendarView = ({ onSelectDay, onBack, user }) => {
     `;
 };
 
-const Dashboard = ({ onNavigate, user, onLogout }) => {
+const Dashboard = ({ onNavigate, user, onLogout, syncStatus }) => {
     const today = new Date();
     const todayStr = today.toISOString().split('T')[0];
     const diffTime = Math.abs(today - START_DATE);
@@ -492,7 +499,7 @@ const Dashboard = ({ onNavigate, user, onLogout }) => {
     `;
 };
 
-const WeekView = ({ weekId, onBack, user }) => {
+const WeekView = ({ weekId, onBack, user, syncStatus }) => {
     const weekData = WEEKS_DATA.find(w => w.id === parseInt(weekId)) || WEEKS_DATA[0];
     const [tasksState, setTasksState] = useSmartState({}, `tasks_week_${weekData.id}`, user);
 
@@ -507,7 +514,7 @@ const WeekView = ({ weekId, onBack, user }) => {
 
     return html`
         <div class="container animate-fade-in">
-             <${NavBar} onBack=${onBack} title=${`Week ${weekData.id}: ${weekData.theme}`} user=${user} />
+             <${NavBar} onBack=${onBack} title=${`Week ${weekData.id}: ${weekData.theme}`} user=${user} syncStatus=${syncStatus} />
             
              <div class="card">
                 <blockquote style=${{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid var(--border-color)', fontSize: '1.4rem', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#fff' }}>
@@ -551,6 +558,14 @@ const App = () => {
     // Trigger global download on login
     useGlobalSync(user);
 
+    // Global Sync Status Listener
+    const [syncStatus, setSyncStatus] = useState('idle');
+    useEffect(() => {
+        const handler = (e) => setSyncStatus(e.detail);
+        window.addEventListener('sync-status', handler);
+        return () => window.removeEventListener('sync-status', handler);
+    }, []);
+
     // Routing
     const [route, setRoute] = useState({ view: 'landing', params: null });
 
@@ -579,10 +594,10 @@ const App = () => {
     return html`
         <div>
             ${route.view === 'landing' && html`<${LandingPage} onStart=${handleStart} onLogin=${login} user=${user} />`}
-            ${route.view === 'dashboard' && html`<${Dashboard} onNavigate=${navigate} user=${user} onLogout=${logout} />`}
-            ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} user=${user} />`}
-            ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} />`}
-            ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} />`}
+            ${route.view === 'dashboard' && html`<${Dashboard} onNavigate=${navigate} user=${user} onLogout=${logout} syncStatus=${syncStatus} />`}
+            ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
+            ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
+            ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
         </div>
     `;
 };
