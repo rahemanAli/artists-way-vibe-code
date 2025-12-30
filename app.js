@@ -111,6 +111,13 @@ function useSmartState(defaultValue, key, user) {
                     setValue(remoteValue);
                     window.localStorage.setItem(getStorageKey(key), JSON.stringify(remoteValue));
                 }
+            } else {
+                // Cloud is empty, but we might have local data (Offline work)
+                // If so, auto-upload it to safe-guard it
+                if (valueRef.current && valueRef.current !== defaultValue) {
+                    console.log(`Auto-uploading offline data for ${key}`);
+                    setDoc(docRef, { value: valueRef.current }, { merge: true });
+                }
             }
         }, (err) => console.error("Sync error", err));
 
