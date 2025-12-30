@@ -4,7 +4,7 @@ import htm from 'htm';
 import { WEEKS_DATA, START_DATE } from './data.js';
 import { auth, db, googleProvider } from './firebase.js';
 import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot, collection, query, getDocs } from 'firebase/firestore';
 
 const html = htm.bind(React.createElement);
 
@@ -48,6 +48,32 @@ function useAuth() {
     const logout = () => signOut(auth);
 
     return { user, loading, login, logout };
+}
+
+// Global Sync Hook - Downloads ALL data on login to populate LocalStorage for Dashboard
+function useGlobalSync(user) {
+    const [synced, setSynced] = useState(false);
+
+    useEffect(() => {
+        if (!user) return;
+
+        console.log("Starting global sync...");
+        const q = query(collection(db, 'users', user.uid, 'data'));
+
+        // One-time fetch on login to hydration LocalStorage
+        getDocs(q).then((snapshot) => {
+            snapshot.forEach((doc) => {
+                const key = doc.id; // e.g., 'mp_2025-12-31'
+                const val = JSON.stringify(doc.data().value);
+                window.localStorage.setItem(getStorageKey(key), val);
+            });
+            console.log("Global sync complete. LocalStorage updated.");
+            setSynced(true); // Trigger re-render of components relying on storage
+        }).catch(err => console.error("Global sync failed:", err));
+
+    }, [user]);
+
+    return synced;
 }
 
 // Hook for Data Sync
@@ -522,6 +548,8 @@ const WeekView = ({ weekId, onBack, user }) => {
 const App = () => {
     // Auth State
     const { user, loading, login, logout } = useAuth();
+    // Trigger global download on login
+    useGlobalSync(user);
 
     // Routing
     const [route, setRoute] = useState({ view: 'landing', params: null });

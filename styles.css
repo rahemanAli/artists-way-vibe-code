@@ -29,9 +29,9 @@ body {
     background-repeat: no-repeat;
     color: var(--text-primary);
     line-height: 1.6;
-    padding-bottom: 80px;
     margin: 0;
     min-height: 100vh;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom));
 }
 
 /* Utilities */
@@ -39,7 +39,11 @@ body {
     max-width: 1100px;
     /* Wider for desktop */
     margin: 0 auto;
-    padding: 24px 40px;
+    padding: 24px 24px;
+    /* Reduced side padding for mobile */
+    padding-top: calc(24px + env(safe-area-inset-top));
+    padding-left: calc(24px + env(safe-area-inset-left));
+    padding-right: calc(24px + env(safe-area-inset-right));
     min-height: 100vh;
     display: flex;
     flex-direction: column;
