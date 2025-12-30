@@ -620,11 +620,35 @@ const App = () => {
             position: 'fixed', bottom: 4, left: 0, right: 0,
             textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', pointerEvents: 'none'
         }}>
-                v1.2 | Today: ${new Date().toISOString().split('T')[0]} | ${user ? user.email : 'Offline'}
+                v1.3 | Today: ${new Date().toISOString().split('T')[0]} | ${user ? user.email : 'Offline'}
             </div>
         </div>
     `;
 };
 
+// Error Boundary for blank screen debugging
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return html`
+                <div style=${{ padding: 40, color: 'red' }}>
+                    <h1>Something went wrong</h1>
+                    <pre>${this.state.error.toString()}</pre>
+                </div>
+            `;
+        }
+        return this.props.children;
+    }
+}
+
 const root = createRoot(document.getElementById('root'));
-root.render(html`<${App} />`);
+root.render(html`<${ErrorBoundary}><${App} /><//>`);
