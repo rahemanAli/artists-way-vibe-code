@@ -639,12 +639,11 @@ const App = () => {
             ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             
-            <div onClick=${handleDebugClick} style=${{
+            <div style=${{
             position: 'fixed', bottom: 4, left: 0, right: 0,
-            textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.4)',
-            cursor: 'pointer', zIndex: 9999
+            textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', pointerEvents: 'none'
         }}>
-                v1.5 | Today: ${getLocalYMD(new Date())} | ${user ? user.email : 'Offline'} (Tap for Debug)
+                v1.6 | Today: ${getLocalYMD(new Date())} | ${user ? user.email : 'Offline'}
             </div>
         </div>
     `;
