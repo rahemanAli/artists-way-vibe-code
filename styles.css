@@ -1,0 +1,472 @@
+:root {
+    /* Premium Dark Theme */
+    --bg-color: #0d0d0d;
+    --card-bg: rgba(26, 26, 26, 0.6);
+    /* More transparency for glass effect */
+    --text-primary: #ededed;
+    --text-secondary: #a0a0a0;
+    --accent-color: #9d7fe6;
+    --accent-hover: #b197fc;
+    --success-color: #4cd964;
+    --success-bg: rgba(76, 217, 100, 0.15);
+    --border-color: rgba(255, 255, 255, 0.08);
+    --shadow-sm: 0 4px 6px rgba(0, 0, 0, 0.2);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.3);
+    /* Softer, larger shadow */
+
+    --radius-md: 12px;
+    --radius-lg: 24px;
+    --font-main: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    font-family: var(--font-main);
+    background-color: var(--bg-color);
+    background-image: url('./background.png');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding-bottom: 80px;
+    margin: 0;
+    min-height: 100vh;
+}
+
+/* Utilities */
+.container {
+    max-width: 1100px;
+    /* Wider for desktop */
+    margin: 0 auto;
+    padding: 24px 40px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Responsive Grid System for Dashboard */
+.dashboard-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.dashboard-header {
+    text-align: center;
+    padding: 20px 0;
+}
+
+@media (min-width: 768px) {
+    .dashboard-header {
+        text-align: left;
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 24px;
+        margin-bottom: 24px;
+    }
+
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        /* Fixed sidebar, fluid content */
+        gap: 32px;
+        align-items: start;
+    }
+}
+
+.card {
+    background: var(--card-bg);
+    /* Glassmorphism effect */
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    /* More breathing room */
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.card-clickable {
+    cursor: pointer;
+}
+
+h1,
+h2,
+h3 {
+    margin-bottom: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #fff;
+}
+
+h1 {
+    font-size: 2.5rem;
+}
+
+h2 {
+    font-size: 1.8rem;
+}
+
+h3 {
+    font-size: 1.4rem;
+    margin-bottom: 8px;
+}
+
+p {
+    color: var(--text-secondary);
+    margin-bottom: 0;
+}
+
+.section-title {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    display: block;
+}
+
+/* Specific Component Styles */
+
+/* Progress Card (Left Column) */
+.progress-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+}
+
+/* Quick Links Grid (Right Column Bottom) */
+.quick-links-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-top: 24px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 28px;
+    border-radius: var(--radius-md);
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 1rem;
+    gap: 10px;
+    text-decoration: none;
+}
+
+.btn-sm {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
+
+.btn-lg {
+    padding: 18px 36px;
+    font-size: 1.2rem;
+    border-radius: 30px;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-color), var(--accent-hover));
+    color: #000;
+    box-shadow: 0 4px 15px rgba(157, 127, 230, 0.3);
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(157, 127, 230, 0.4);
+}
+
+.btn-disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #333;
+    color: #666;
+    box-shadow: none;
+}
+
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.btn-outline:hover {
+    border-color: var(--text-primary);
+    color: var(--text-primary);
+}
+
+/* Landing Page */
+.landing-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    flex: 1;
+    padding: 80px 0;
+}
+
+.hero-quote {
+    font-style: italic;
+    color: var(--text-secondary);
+    font-size: 1.4rem;
+    max-width: 600px;
+    margin-bottom: 40px;
+    border-left: 3px solid var(--accent-color);
+    padding-left: 24px;
+}
+
+/* Editor - Zen Mode */
+.editor-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 0;
+    background: var(--bg-color);
+    /* Ensure opaque background for writing */
+}
+
+.editor-header {
+    padding: 24px 40px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(13, 13, 13, 0.95);
+}
+
+.editor-content-wrapper {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    overflow-y: auto;
+}
+
+.editor-textarea {
+    width: 100%;
+    max-width: 750px;
+    /* Ideal reading/writing width */
+    padding: 40px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 1.35rem;
+    font-family: 'Merriweather', Georgia, serif;
+    resize: none;
+    line-height: 1.8;
+}
+
+.editor-textarea:focus {
+    outline: none;
+}
+
+.word-count-bar {
+    padding: 16px 40px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--card-bg);
+    backdrop-filter: blur(12px);
+    gap: 32px;
+}
+
+.word-count-wrapper {
+    width: 100%;
+    max-width: 750px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+/* Calendar Grid - Clean Version */
+.calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.day-cell {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+    position: relative;
+    padding: 2px;
+}
+
+.day-cell.today {
+    background: rgba(157, 127, 230, 0.2);
+    color: var(--accent-color);
+    box-shadow: 0 0 0 1px var(--accent-color);
+}
+
+.day-cell.complete {
+    background-color: var(--success-color);
+    color: #000;
+    box-shadow: 0 4px 12px rgba(76, 217, 100, 0.2);
+}
+
+.day-cell:hover {
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.05);
+}
+
+.day-number {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.day-date {
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-top: 2px;
+}
+
+/* Progress Ring */
+.progress-ring-container {
+    position: relative;
+    width: 160px;
+    height: 160px;
+    margin: 0 auto;
+}
+
+.progress-ring-circle {
+    transition: stroke-dashoffset 0.5s ease-in-out;
+    transform: rotate(-90deg);
+    transform-origin: 50% 50%;
+}
+
+.progress-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.progress-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    display: block;
+    line-height: 1;
+    color: #fff;
+}
+
+.progress-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 6px;
+    display: block;
+}
+
+/* Common UI */
+.checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.custom-checkbox {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+}
+
+.checkbox-wrapper input:checked+.custom-checkbox {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    transform: scale(1.1);
+}
+
+.checkbox-wrapper input:checked+.custom-checkbox::after {
+    content: "✓";
+    color: #000;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+input[type="checkbox"] {
+    display: none;
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.6s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+        filter: blur(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+        filter: blur(0);
+    }
+}
+
+.task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.task-item:last-child {
+    border-bottom: none;
+}
+
+.task-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.task-text {
+    flex: 1;
+    font-size: 1.1rem;
+    line-height: 1.5;
+}
+
+.task-text.strikethrough {
+    text-decoration: line-through;
+    color: var(--text-secondary);
+    opacity: 0.7;
+}
