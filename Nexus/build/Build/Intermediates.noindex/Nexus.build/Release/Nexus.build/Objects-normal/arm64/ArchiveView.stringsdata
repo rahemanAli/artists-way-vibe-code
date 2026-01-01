@@ -1,0 +1,48 @@
+{
+  "source": "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/ArchiveView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Archive",
+        "location": {
+          "startingColumn": 26,
+          "startingLine": 50
+        }
+      },
+      {
+        "comment": "",
+        "key": "No Archived Items",
+        "location": {
+          "startingColumn": 40,
+          "startingLine": 11
+        }
+      },
+      {
+        "comment": "",
+        "key": "Restore",
+        "location": {
+          "startingColumn": 32,
+          "startingLine": 37
+        }
+      },
+      {
+        "comment": "",
+        "key": "Archived: %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 28
+        }
+      },
+      {
+        "comment": "",
+        "key": "Completed: %@",
+        "location": {
+          "startingColumn": 38,
+          "startingLine": 24
+        }
+      }
+    ]
+  },
+  "version": 1
+}

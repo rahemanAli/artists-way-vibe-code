@@ -1,0 +1,5 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/mac/Documents/Gravity/Nexus/build/Build/Products/Release/Nexus.app/Contents/MacOS/Nexus'
+relocations:     []
+...

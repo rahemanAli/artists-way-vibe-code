@@ -1,0 +1,106 @@
+{
+  "" : {
+    "const-values" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.swiftconstvalues",
+    "dependencies" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.d",
+    "diagnostics" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.dia",
+    "emit-module-dependencies" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary-emit-module.dia",
+    "pch" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.swiftdeps"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Logic/CalendarManager.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/CalendarManager.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/CalendarManager.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/CalendarManager.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Logic/DataController.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/DataController.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/DataController.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/DataController.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Logic/NotificationManager.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/NotificationManager.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/NotificationManager.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/NotificationManager.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Logic/StaleDataDetector.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/StaleDataDetector.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/StaleDataDetector.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/StaleDataDetector.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Logic/WorkflowManager.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/WorkflowManager.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/WorkflowManager.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/WorkflowManager.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Models/Context.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Context.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Context.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Context.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Models/Item.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Item.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Item.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Item.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Models/Link.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Link.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Link.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Link.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/ArchiveView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/ArchiveView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/ArchiveView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/ArchiveView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/DashboardView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/DashboardView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/DashboardView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/DashboardView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/GlobalCaptureView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/GlobalCaptureView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/GlobalCaptureView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/GlobalCaptureView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/MainApp.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MainApp.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MainApp.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MainApp.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/OverviewView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/OverviewView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/OverviewView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/OverviewView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/ProcessingView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/ProcessingView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/ProcessingView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/ProcessingView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/Mac/WeeklyReviewView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/WeeklyReviewView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/WeeklyReviewView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/WeeklyReviewView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/iOS/MobileApp.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileApp.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileApp.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileApp.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/iOS/MobileCaptureView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileCaptureView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileCaptureView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileCaptureView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/iOS/MobileListView.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileListView.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileListView.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/MobileListView.o"
+  },
+  "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/Nexus.build/Release/Nexus.build/Objects-normal/arm64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/GeneratedAssetSymbols.o"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "source": "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Views/iOS/MobileCaptureView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Capture",
+        "location": {
+          "startingColumn": 18,
+          "startingLine": 13
+        }
+      },
+      {
+        "comment": "",
+        "key": "What's on your mind?",
+        "location": {
+          "startingColumn": 23,
+          "startingLine": 18
+        }
+      }
+    ]
+  },
+  "version": 1
+}

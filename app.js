@@ -202,7 +202,7 @@ const ProgressRing = ({ radius, stroke, progress }) => {
     `;
 };
 
-const NavBar = ({ onBack, title, user, onLogout, syncStatus }) => html`
+const NavBar = ({ onBack, title, user, onLogout }) => html`
     <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style=${{ display: 'flex', alignItems: 'center' }}>
             ${onBack ? html`
@@ -214,11 +214,6 @@ const NavBar = ({ onBack, title, user, onLogout, syncStatus }) => html`
         </div>
         <div style=${{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             ${user && html`
-                <div style=${{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    ${syncStatus === 'saving' && html`<span class="animate-pulse">Saving...</span>`}
-                    ${syncStatus === 'saved' && html`<span style=${{ color: 'var(--success-color)' }}>Synced</span>`}
-                    ${syncStatus === 'error' && html`<span style=${{ color: '#ff4444' }}>Sync Error</span>`}
-                </div>
                 <div class="btn btn-sm btn-ghost" onClick=${onLogout} title="Sign Out">
                     <${LogOutIcon} size=${20} />
                 </div>
@@ -522,6 +517,14 @@ const Dashboard = ({ onNavigate, user, onLogout, syncStatus }) => {
                                 <p>${weekData.theme}</p>
                             </div>
                         </div>
+
+                        <div class="card card-clickable" onClick=${() => onNavigate('review', currentWeekNum)} style=${{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', gridColumn: 'span 2' }}>
+                            <div style=${{ color: 'var(--success-color)' }}><${Edit3} size=${40} /></div>
+                            <div>
+                                <h3>Weekly Review</h3>
+                                <p>Reflect on your Week ${currentWeekNum} journey</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -578,6 +581,61 @@ const WeekView = ({ weekId, onBack, user, syncStatus }) => {
                     `)}
                 </div>
             </div>
+        </div>
+    `;
+};
+
+const WeeklyReview = ({ weekId, onBack, user }) => {
+    const weekData = WEEKS_DATA.find(w => w.id === parseInt(weekId)) || WEEKS_DATA[0];
+    const [summary, setSummary] = useSmartState("", `review_week_${weekData.id}`, user);
+
+    // Get all 7 days of entries
+    const entries = [];
+    for (let i = 0; i < 7; i++) {
+        const dayIdx = (weekData.id - 1) * 7 + i;
+        const info = getDayInfo(dayIdx);
+        // We peek directly into localStorage for speed/simplicity in this review view
+        // usage of hook would require 7 hooks which is messy in a loop
+        const content = window.localStorage.getItem(getStorageKey(`journal_${info.dateStr}`)) || "";
+        if (content.trim()) {
+            entries.push({ ...info, content });
+        }
+    }
+
+    return html`
+        <div class="container animate-fade-in">
+             <${NavBar} onBack=${onBack} title=${`Review: Week ${weekData.id}`} user=${user} />
+            
+             <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', height: 'calc(100vh - 140px)' }}>
+                <!-- Left: Read Past Entries -->
+                <div class="card" style=${{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <h3 style=${{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>Morning Pages (${entries.length}/7)</h3>
+                    ${entries.length === 0 ? html`<p>No entries found for this week.</p>` : null}
+                    ${entries.map(entry => html`
+                        <div>
+                            <div style=${{ fontSize: '0.9rem', color: 'var(--accent-color)', marginBottom: '8px' }}>
+                                ${formatDate(entry.dateStr)}
+                            </div>
+                            <div style=${{ fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: '1.6', whiteSpace: 'pre-wrap' }}>
+                                ${entry.content}
+                            </div>
+                        </div>
+                    `)}
+                </div>
+
+                <!-- Right: Write Summary -->
+                <div class="card" style=${{ display: 'flex', flexDirection: 'column' }}>
+                    <h3 style=${{ marginBottom: '16px' }}>Weekly Reflection</h3>
+                    <p style=${{ marginBottom: '16px' }}>What key insights emerged this week? How did the Artist Date go?</p>
+                    <textarea 
+                        class="editor-textarea" 
+                        style=${{ flex: 1, padding: '16px', fontSize: '1.1rem', background: 'rgba(0,0,0,0.2)' }}
+                        placeholder="Summarize your week..."
+                        value=${summary}
+                        onChange=${(e) => setSummary(e.target.value)}
+                    ></textarea>
+                </div>
+             </div>
         </div>
     `;
 };
@@ -645,13 +703,7 @@ const App = () => {
             ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
             ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
-            
-            <div style=${{
-            position: 'fixed', bottom: 4, left: 0, right: 0,
-            textAlign: 'center', fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', pointerEvents: 'none'
-        }}>
-                v1.6 | Today: ${getLocalYMD(new Date())} | ${user ? user.email : 'Offline'}
-            </div>
+            ${route.view === 'review' && html`<${WeeklyReview} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} />`}
         </div>
     `;
 };

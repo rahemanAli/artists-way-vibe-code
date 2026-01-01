@@ -1,0 +1,12 @@
+{
+  "/Users/mac/Documents/Gravity/Nexus/Nexus/Sources/Logic/CalendarManager.swift" : {
+    "abi-baseline-json" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus.abi.json",
+    "const-values" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.swiftconstvalues",
+    "dependencies" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.d",
+    "diagnostics" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-primary.dia",
+    "objc-header" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus-Swift.h",
+    "swiftdoc" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus.swiftdoc",
+    "swiftmodule" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus.swiftmodule",
+    "swiftsourceinfo" : "/Users/mac/Documents/Gravity/Nexus/build/Build/Intermediates.noindex/Nexus.build/Release/Nexus.build/Objects-normal/arm64/Nexus.swiftsourceinfo"
+  }
+}
