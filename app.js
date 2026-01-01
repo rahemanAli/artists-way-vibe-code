@@ -204,13 +204,15 @@ const ProgressRing = ({ radius, stroke, progress }) => {
 
 const NavBar = ({ onBack, title, user, onLogout }) => html`
     <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <div style=${{ display: 'flex', alignItems: 'center' }}>
+        <div style=${{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             ${onBack ? html`
-                <div class="btn btn-sm btn-outline" onClick=${onBack} style=${{ marginRight: '24px' }}>
+                <div class="btn btn-sm btn-outline" onClick=${onBack} style=${{ marginRight: '12px' }}>
                     <${ArrowLeft} size=${18} /> Back
                 </div>
-            ` : null}
-            ${title && html`<h2 style=${{ margin: 0 }}>${title}</h2>`}
+            ` : html`
+                <img src="./logo.png" alt="Logo" style=${{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--accent-color)' }} />
+            `}
+            ${title && html`<h2 style=${{ margin: 0, fontSize: '1.5rem' }}>${title}</h2>`}
         </div>
         <div style=${{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             ${user && html`

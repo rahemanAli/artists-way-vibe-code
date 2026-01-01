@@ -5,6 +5,7 @@ const URLS_TO_CACHE = [
     './styles.css',
     './app.js',
     './data.js',
+    './logo.png',
     './manifest.json',
     'https://unpkg.com/lucide@latest',
     'https://esm.sh/react@18.2.0',
