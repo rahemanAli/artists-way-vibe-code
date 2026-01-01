@@ -4,10 +4,24 @@ import htm from 'htm';
 import { WEEKS_DATA, START_DATE } from './data.js';
 
 const html = htm.bind(React.createElement);
-const {
-    BookOpen, Calendar: CalendarIcon, CheckCircle, ChevronLeft, ChevronRight,
-    Edit3, Moon, Sun, ArrowRight, ArrowLeft, LogOut: LogOutIcon
-} = window.lucide;
+
+// --- Icons (Wrapper for Vanilla Lucide) ---
+// Vanilla Lucide 'window.lucide' contains objects, not Components.
+// We must render <i> tags and let lucide.createIcons() animate them.
+const Icon = ({ name, size = 24, color = 'currentColor', ...props }) =>
+    html`<i data-lucide=${name} style=${{ width: size, height: size, color, ...props.style }} ...${props}></i>`;
+
+const BookOpen = (p) => html`<${Icon} name="book-open" ...${p} />`;
+const CalendarIcon = (p) => html`<${Icon} name="calendar" ...${p} />`;
+const CheckCircle = (p) => html`<${Icon} name="check-circle" ...${p} />`;
+const ChevronLeft = (p) => html`<${Icon} name="chevron-left" ...${p} />`;
+const ChevronRight = (p) => html`<${Icon} name="chevron-right" ...${p} />`;
+const Edit3 = (p) => html`<${Icon} name="edit-3" ...${p} />`;
+const Sun = (p) => html`<${Icon} name="sun" ...${p} />`;
+const Moon = (p) => html`<${Icon} name="moon" ...${p} />`;
+const ArrowRight = (p) => html`<${Icon} name="arrow-right" ...${p} />`;
+const ArrowLeft = (p) => html`<${Icon} name="arrow-left" ...${p} />`;
+const LogOutIcon = (p) => html`<${Icon} name="log-out" ...${p} />`;
 
 // --- Local Storage Helper ---
 const getStorageKey = (key) => `artist_way_${key}`;
