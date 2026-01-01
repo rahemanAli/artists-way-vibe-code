@@ -2,158 +2,49 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
 import { WEEKS_DATA, START_DATE } from './data.js';
-import { auth, db, googleProvider } from './firebase.js';
-import { signInWithPopup, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc, onSnapshot, collection, query, getDocs } from 'firebase/firestore';
 
 const html = htm.bind(React.createElement);
+const {
+    BookOpen, Calendar: CalendarIcon, CheckCircle, ChevronLeft, ChevronRight,
+    Edit3, Moon, Sun, ArrowRight, ArrowLeft, LogOut: LogOutIcon
+} = window.lucide;
 
-// --- Icons ---
-const CheckIcon = () => html`<i data-lucide="check" style=${{ width: 20, height: 20 }}></i>`;
-const ChevronLeft = () => html`<i data-lucide="chevron-left"></i>`;
-const ArrowLeft = () => html`<i data-lucide="arrow-left"></i>`;
-const CalendarIcon = () => html`<i data-lucide="calendar"></i>`;
-const BookOpen = () => html`<i data-lucide="book-open"></i>`;
-const Edit3 = () => html`<i data-lucide="edit-3"></i>`;
-const CalendarPlus = () => html`<i data-lucide="calendar-plus"></i>`;
-const ArrowRight = () => html`<i data-lucide="arrow-right"></i>`;
-const LogOutIcon = () => html`<i data-lucide="log-out"></i>`;
-const UserIcon = () => html`<i data-lucide="user"></i>`;
-
-// --- Utils ---
+// --- Local Storage Helper ---
 const getStorageKey = (key) => `artist_way_${key}`;
 
-// Hook for Auth
-function useAuth() {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+// --- Hooks ---
 
-    useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, (u) => {
-            setUser(u);
-            setLoading(false);
-        });
-        return unsubscribe;
-    }, []);
-
-    const login = async () => {
-        try {
-            await signInWithPopup(auth, googleProvider);
-        } catch (error) {
-            console.error("Login failed", error);
-            alert("Login failed: " + error.message);
-        }
-    };
-
-    const logout = () => signOut(auth);
-
-    return { user, loading, login, logout };
-}
-
-// Global Sync Hook - Downloads ALL data on login to populate LocalStorage for Dashboard
-function useGlobalSync(user) {
-    const [synced, setSynced] = useState(false);
-
-    useEffect(() => {
-        if (!user) return;
-
-        console.log("Starting global sync...");
-        const q = query(collection(db, 'users', user.uid, 'data'));
-
-        getDocs(q).then((snapshot) => {
-            snapshot.forEach((doc) => {
-                const key = doc.id;
-                const val = JSON.stringify(doc.data().value);
-                window.localStorage.setItem(getStorageKey(key), val);
-            });
-            console.log("Global sync complete.");
-            setSynced(true);
-            // Force a storage event to update other tabs/hooks if needed? 
-            // Or just rely on the component re-rendering from setSynced(true)
-        }).catch(err => console.error("Global sync failed:", err));
-
-    }, [user]);
-
-    return synced;
-}
-
-// Hook for Data Sync
-function useSmartState(defaultValue, key, user) {
-    // 1. Initialize from LocalStorage
+// 1. Local-Only State Hook (No Firebase)
+function useSmartState(defaultValue, key) {
+    // Initialize from LocalStorage
     const [value, setValue] = useState(() => {
         const stickyValue = window.localStorage.getItem(getStorageKey(key));
         return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
     });
 
-    // Keep a ref to the current value to avoid stale closures in onSnapshot
-    const valueRef = useRef(value);
-
-    // Update ref whenever value changes
-    useEffect(() => {
-        valueRef.current = value;
-    }, [value]);
-
-    // 2. Sync from Firestore
-    useEffect(() => {
-        if (!user) return;
-
-        const docRef = doc(db, 'users', user.uid, 'data', key);
-        const unsubscribe = onSnapshot(docRef, (snap) => {
-            // Ignore updates that are just our own local writes echoing back
-            if (snap.metadata.hasPendingWrites) return;
-
-            if (snap.exists()) {
-                const remoteValue = snap.data().value;
-                // Only update if truly different from what we currently have
-                // This prevents overwriting our unsaved local work with old server data
-                if (JSON.stringify(remoteValue) !== JSON.stringify(valueRef.current)) {
-                    console.log(`Remote update for ${key}`, remoteValue);
-                    setValue(remoteValue);
-                    window.localStorage.setItem(getStorageKey(key), JSON.stringify(remoteValue));
-                }
-            } else {
-                // Cloud is empty, but we might have local data (Offline work)
-                // If so, auto-upload it to safe-guard it
-                if (valueRef.current && valueRef.current !== defaultValue) {
-                    console.log(`Auto-uploading offline data for ${key}`);
-                    setDoc(docRef, { value: valueRef.current }, { merge: true });
-                }
-            }
-        }, (err) => console.error("Sync error", err));
-
-        return () => unsubscribe();
-    }, [user, key]);
-
-    // 3. Setter wrapper
     const setSmartValue = (newValue) => {
         const valueToStore = newValue instanceof Function ? newValue(value) : newValue;
-
+        // Update State
         setValue(valueToStore);
+        // Update LocalStorage
         window.localStorage.setItem(getStorageKey(key), JSON.stringify(valueToStore));
-
-        if (user) {
-            window.dispatchEvent(new CustomEvent('sync-status', { detail: 'saving' }));
-            setDoc(doc(db, 'users', user.uid, 'data', key), { value: valueToStore }, { merge: true })
-                .then(() => {
-                    window.dispatchEvent(new CustomEvent('sync-status', { detail: 'saved' }));
-                    setTimeout(() => window.dispatchEvent(new CustomEvent('sync-status', { detail: 'idle' })), 2000);
-                })
-                .catch(e => {
-                    console.error("Save failed", e);
-                    window.dispatchEvent(new CustomEvent('sync-status', { detail: 'error' }));
-                    alert("Sync Error: " + e.message);
-                });
-        }
     };
 
     return [value, setSmartValue];
 }
 
-function getWordCount(text) {
-    if (!text) return 0;
-    return text.trim().split(/\s+/).filter(w => w.length > 0).length;
+// 2. Mock Auth Hook (Always Logged In Locally)
+function useAuth() {
+    // We treat the user as always "logged in" to the local device
+    const [user] = useState({
+        uid: 'local-user',
+        email: 'Local Journal',
+        displayName: 'Writer'
+    });
+    return { user, loading: false, login: () => { }, logout: () => { } };
 }
 
+// --- Utils ---
 function formatDate(date) {
     return new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -172,37 +63,36 @@ function getDayInfo(dayIndex) { // 0-based index
     return { date, weekNum, dayNum, dateStr: getLocalYMD(date) };
 }
 
-function generateGoogleCalendarUrl(title, details, date) {
-    const d = new Date(date);
-    d.setHours(10, 0, 0, 0);
-    const start = d.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, 15) + "Z";
-    d.setHours(12, 0, 0, 0);
-    const end = d.toISOString().replace(/-|:|\.\d\d\d/g, "").slice(0, 15) + "Z";
-    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&details=${encodeURIComponent(details)}&dates=${start}/${end}`;
-}
-
 // --- Components ---
 
-const ProgressRing = ({ radius, stroke, progress }) => {
-    const normalizedRadius = radius - stroke * 2;
-    const circumference = normalizedRadius * 2 * Math.PI;
-    const strokeDashoffset = circumference - (progress / 100) * circumference;
+class ErrorBoundary extends React.Component {
+    constructor(props) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
 
-    return html`
-        <div class="progress-ring-container">
-            <svg height=${radius * 2} width=${radius * 2}>
-                <circle stroke="#333" stroke-width=${stroke} fill="transparent" r=${normalizedRadius} cx=${radius} cy=${radius} />
-                <circle class="progress-ring-circle" stroke="var(--accent-color)" stroke-width=${stroke} stroke-dasharray=${circumference + ' ' + circumference} style=${{ strokeDashoffset }} stroke-linecap="round" fill="transparent" r=${normalizedRadius} cx=${radius} cy=${radius} />
-            </svg>
-            <div class="progress-text">
-                <span class="progress-number">${Math.round(progress)}%</span>
-                <span class="progress-label">Complete</span>
-            </div>
-        </div>
-    `;
-};
+    static getDerivedStateFromError(error) {
+        return { hasError: true, error };
+    }
 
-const NavBar = ({ onBack, title, user, onLogout }) => html`
+    componentDidCatch(error, errorInfo) {
+        console.error("React Error Boundary:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return html`
+                <div style=${{ padding: '40px', color: 'white', background: '#330000', height: '100vh' }}>
+                    <h1>Something went wrong.</h1>
+                    <pre style=${{ whiteSpace: 'pre-wrap', color: '#ffaaaa' }}>${this.state.error.toString()}</pre>
+                </div>
+            `;
+        }
+        return this.props.children;
+    }
+}
+
+const NavBar = ({ onBack, title }) => html`
     <div style=${{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div style=${{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             ${onBack ? html`
@@ -214,292 +104,237 @@ const NavBar = ({ onBack, title, user, onLogout }) => html`
             `}
             ${title && html`<h2 style=${{ margin: 0, fontSize: '1.5rem' }}>${title}</h2>`}
         </div>
-        <div style=${{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            ${user && html`
-                <div class="btn btn-sm btn-ghost" onClick=${onLogout} title="Sign Out">
-                    <${LogOutIcon} size=${20} />
-                </div>
-            `}
-        </div>
+        <!-- No Logout Button Needed in Local Mode -->
     </div>
 `;
 
-const LandingPage = ({ onStart, onLogin, user }) => html`
+const LandingPage = ({ onStart }) => html`
     <div class="container animate-fade-in" style=${{ justifyContent: 'center' }}>
         <div class="landing-hero">
-            <h1 style=${{ fontSize: '4rem', marginBottom: '1.5rem', background: 'linear-gradient(to right, #fff, #9d7fe6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                The Artist's Way
-            </h1>
-            <p style=${{ fontSize: '1.5rem', color: 'var(--text-secondary)', marginBottom: '40px' }}>
-                A 12-week spiritual path to higher creativity.
-            </p>
-
-            <div class="hero-quote">
-                "In order to retrieve your creativity, you need to find it. I ask you to do this by an apparently pointless process I call the morning pages."
-            </div>
-
-            <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', textAlign: 'left', maxWidth: '800px', margin: '0 auto 60px' }}>
-                <div class="card" style=${{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                     <div style=${{ color: 'var(--accent-color)' }}><${Edit3} size=${32} /></div>
-                     <div>
-                        <h3 style=${{ marginBottom: '8px' }}>Morning Pages</h3>
-                        <p>Three pages of longhand, stream of consciousness writing, done first thing in the morning.</p>
-                     </div>
-                </div>
-                <div class="card" style=${{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
-                     <div style=${{ color: 'var(--accent-color)' }}><${CalendarPlus} size=${32} /></div>
-                     <div>
-                        <h3 style=${{ marginBottom: '8px' }}>Artist Date</h3>
-                        <p>A block of time, perhaps two hours weekly, especially set aside and committed to nurturing your creative consciousness.</p>
-                     </div>
-                </div>
-            </div>
-
-            <div style=${{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                ${!user ? html`
-                     <button class="btn btn-primary btn-lg" onClick=${onLogin} style=${{ background: '#4285F4', borderColor: '#4285F4', display: 'flex', gap: '12px' }}>
-                        <${UserIcon} size=${24} /> Sign in with Google to Sync
-                    </button>
-                    <div style=${{ opacity: 0.6, fontSize: '0.9rem' }}> or </div>
-                    <button class="btn btn-outline" onClick=${onStart}>
-                        Continue Offline
-                    </button>
-                ` : html`
-                    <button class="btn btn-primary btn-lg" onClick=${onStart}>
-                        Go to Dashboard <${ArrowRight} size=${24} />
-                    </button>
-                    <div style=${{ color: 'var(--success-color)' }}>Logged in as ${user.displayName || user.email}</div>
-                `}
-            </div>
+            <h1 style=${{ fontSize: '3.5rem', marginBottom: '1rem', background: 'linear-gradient(to right, #fff, #a0a0a0)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>The Artist's Way</h1>
+            <p style=${{ fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '40px' }}>Your 12-week creative recovery journey.</p>
+            
+            <button class="btn btn-primary btn-lg" onClick=${onStart}>
+                Open Journal <${ArrowRight} size=${24} />
+            </button>
+            <p style=${{ marginTop: '24px', fontSize: '0.9rem', color: '#666' }}>Local Mode • Offline Ready</p>
         </div>
     </div>
 `;
 
-const DailyEditor = ({ dateStr, onBack, user }) => {
-    const [content, setContent] = useSmartState("", `journal_${dateStr}`, user);
-    const [done, setDone] = useSmartState(false, `mp_${dateStr}`, user);
-    const [showSuccess, setShowSuccess] = useState(false);
+const CalendarView = ({ onSelectDay, onBack }) => {
+    // Generate all 12 weeks * 7 days
+    const totalDays = 12 * 7;
+    const days = [];
 
-    // Word count logic
-    const wordCount = getWordCount(content);
-    const targetWords = 750;
-    const progress = Math.min(100, (wordCount / targetWords) * 100);
-    const canSubmit = wordCount >= targetWords;
-
-    const handleSubmit = () => {
-        if (canSubmit) {
-            setDone(true);
-            setShowSuccess(true);
-            setTimeout(() => {
-                onBack();
-            }, 2000);
-        }
-    };
-
-    if (showSuccess) {
-        return html`
-            <div class="animate-fade-in" style=${{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                background: '#121212', zIndex: 100
-            }}>
-                <div style=${{
-                width: 80, height: 80, borderRadius: '50%', background: 'var(--success-color)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px',
-                animation: 'popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-            }}>
-                    <${CheckIcon} size=${48} color="#000" />
-                </div>
-                <h2 style=${{ fontSize: '2rem', marginBottom: '8px' }}>Great Job!</h2>
-                <p style=${{ color: 'var(--text-secondary)' }}>Day Complete</p>
-                <style>
-                    @keyframes popIn {
-                        0% { transform: scale(0); }
-                        100% { transform: scale(1); }
-                    }
-                </style>
-            </div>
-        `;
+    // Inefficient loop but okay for 84 items. 
+    for (let i = 0; i < totalDays; i++) {
+        const info = getDayInfo(i);
+        const [done] = useSmartState(false, `mp_${info.dateStr}`);
+        days.push({ ...info, done, index: i });
     }
 
     return html`
-        <div class="animate-fade-in editor-container">
-            <div class="editor-header">
-                <div class="btn btn-sm btn-outline" onClick=${onBack}>
-                    <${ArrowLeft} size=${16} /> Back
-                </div>
-                <div style=${{ fontSize: '1.1rem', fontWeight: 'bold' }}>${formatDate(dateStr)}</div>
-                <div style=${{ width: 80 }}></div> <!-- Spacer -->
-            </div>
-            
-            <div class="editor-content-wrapper">
-                <textarea 
-                    class="editor-textarea" 
-                    placeholder="Clear your mind. Just write..." 
-                    value=${content}
-                    onChange=${(e) => setContent(e.target.value)}
-                    autoFocus
-                ></textarea>
-            </div>
-            
-            <div class="word-count-bar">
-                <div class="word-count-wrapper">
-                    <div style=${{ flex: 1 }}>
-                        <div style=${{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                            <span class="word-count-text">${wordCount} / ${targetWords} words</span>
-                            ${done && html`<span style=${{ color: 'var(--success-color)' }}><${CheckIcon} size=${14}/> Submitted</span>`}
-                        </div>
-                        <div class="word-count-progress">
-                            <div class="word-count-fill" style=${{ width: `${progress}%`, background: canSubmit ? 'var(--success-color)' : 'var(--accent-color)' }}></div>
-                        </div>
-                    </div>
-                    
-                    <button 
-                        class="btn btn-primary ${!canSubmit ? 'btn-disabled' : ''}" 
-                        style=${{ padding: '12px 24px' }}
-                        onClick=${handleSubmit}
-                        disabled=${!canSubmit}
-                    >
-                        ${done ? 'Update' : 'Submit'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-};
-
-const CalendarView = ({ onSelectDay, onBack, user, syncStatus }) => {
-    const weeks = useMemo(() => {
-        const result = [];
-        for (let w = 0; w < 12; w++) {
-            const days = [];
-            for (let d = 0; d < 7; d++) {
-                days.push(getDayInfo(w * 7 + d));
-            }
-            result.push({ id: w + 1, days });
-        }
-        return result;
-    }, []);
-
-    const todayStr = getLocalYMD(new Date());
-
-    // Note: For Calendar View, we are reading individual days. 
-    // This is inefficient with the current hook structure (84 hooks?).
-    // A better approach for the future is to sync the whole progress map.
-    // For now, we will rely on LocalStorage for the overview to keep it fast, 
-    // assuming the individual "DailyEditor" opens will sync the specific days.
-    // OR we could fetch 'all progress' on mount.
-    // Limitation alert: Calendar might not show completion from phone immediately until you view the day.
-    // But since `useSmartState` writes to localStorage, if we visited the day it's there.
-    // For sync: Ideally we need a `useAllProgress` hook.
-    // Let's stick to localStorage for rendering the grid for speed, assuming user mostly works on "today".
-
-    return html`
         <div class="container animate-fade-in">
-            <${NavBar} onBack=${onBack} title="12-Week Journey" user=${user} syncStatus=${syncStatus} />
-            
-            <div style=${{ display: 'grid', gap: '32px' }}>
-                ${weeks.map(week => html`
-                    <div key=${week.id}>
-                        <div style=${{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-                            <span style=${{ fontWeight: '600', color: '#fff', fontSize: '1.2rem' }}>Week ${week.id}</span>
-                            <span style=${{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>${formatDate(week.days[0].date)} - ${formatDate(week.days[6].date)}</span>
-                        </div>
-                        <div class="calendar-grid">
-                            ${week.days.map(day => {
-        const isToday = day.dateStr === todayStr;
-        const isDone = window.localStorage.getItem(getStorageKey(`mp_${day.dateStr}`)) === 'true';
-        const dateNum = day.date.getDate();
-        const monthShort = day.date.toLocaleString('default', { month: 'short' });
-
-        return html`
-                                    <div 
-                                        class="day-cell ${isToday ? 'today' : ''} ${isDone ? 'complete' : ''}" 
-                                        onClick=${() => onSelectDay(day.dateStr)}
-                                    >
-                                        <span class="day-number">${day.dayNum}</span>
-                                        <span class="day-date">${monthShort} ${dateNum}</span>
-                                    </div>
-                                `;
-    })}
-                        </div>
-                    </div>
+            <${NavBar} onBack=${onBack} title="12-Week Journey" />
+            <div class="calendar-grid">
+                ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => html`
+                    <div style=${{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '8px' }}>${d}</div>
+                `)}
+                ${days.map(day => html`
+                    <button 
+                        class="day-cell ${day.done ? 'complete' : ''} ${day.dateStr === getLocalYMD(new Date()) ? 'today' : ''}" 
+                        onClick=${() => onSelectDay(day.dateStr)}
+                        title=${day.dateStr}
+                    >
+                        <span class="day-number">${day.dayNum}</span>
+                        <span class="day-date">${formatDate(day.dateStr)}</span>
+                    </button>
                 `)}
             </div>
         </div>
     `;
 };
 
-const Dashboard = ({ onNavigate, user, onLogout, syncStatus }) => {
+const DailyEditor = ({ dateStr, onBack }) => {
+    const [content, setContent] = useSmartState("", `journal_${dateStr}`);
+    const [done, setDone] = useSmartState(false, `mp_${dateStr}`);
+
+    // We also track word count for strictly UI purposes
+    const wordCount = content.trim().split(/\s+/).filter(w => w.length > 0).length;
+    const target = 750;
+    const progress = Math.min(100, (wordCount / target) * 100);
+
+    const handleSubmit = () => {
+        if (wordCount >= target) {
+            setDone(true);
+            // Trigger confetti or feedback?
+            alert("Great job! Morning Pages complete.");
+            onBack();
+        } else {
+            alert(`Keep going! You need ${target - wordCount} more words.`);
+        }
+    };
+
+    return html`
+        <div class="editor-container animate-fade-in">
+            <div class="editor-header">
+                <div class="btn btn-sm btn-outline" onClick=${onBack}>
+                    <${ArrowLeft} size={18} /> Back
+                </div>
+                <div style=${{ textAlign: 'center' }}>
+                    <h2 style=${{ fontSize: '1.2rem', margin: 0 }}>${formatDate(dateStr)}</h2>
+                    <span style=${{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Morning Pages</span>
+                </div>
+                <div style=${{ width: '40px' }}></div> <!-- Spacer -->
+            </div>
+
+            <div class="editor-content-wrapper">
+                <textarea 
+                    class="editor-textarea" 
+                    placeholder="Clear your mind..." 
+                    value=${content}
+                    onChange=${(e) => setContent(e.target.value)}
+                    autoFocus
+                ></textarea>
+            </div>
+
+            <div class="word-count-bar">
+                <div class="word-count-wrapper">
+                    <div style=${{ flex: 1 }}>
+                        <div style=${{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                            <span style=${{ fontSize: '0.9rem', fontWeight: 600 }}>${wordCount} / ${target} words</span>
+                            <span style=${{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>${Math.round(progress)}%</span>
+                        </div>
+                        <div style=${{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style=${{ width: `${progress}%`, height: '100%', background: progress >= 100 ? 'var(--success-color)' : 'var(--accent-color)', transition: 'width 0.3s ease' }}></div>
+                        </div>
+                    </div>
+                    ${wordCount >= target && !done ? html`
+                        <button class="btn btn-primary" onClick=${handleSubmit}>Mark Complete</button>
+                    ` : null}
+                     ${done ? html`
+                        <div style=${{ color: 'var(--success-color)', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 'bold' }}>
+                            <${CheckCircle} size=${20} /> Completed
+                        </div>
+                    ` : null}
+                </div>
+            </div>
+        </div>
+    `;
+};
+
+const WeekView = ({ weekId, onBack }) => {
+    // Week Logic
+    const weekData = WEEKS_DATA.find(w => w.id === parseInt(weekId)) || WEEKS_DATA[0];
+    const { theme, description, tasks, quote, author } = weekData;
+
+    // Task State (Array of bools)
+    const [taskState, setTaskState] = useSmartState({}, `week_${weekId}_tasks`);
+
+    const toggleTask = (idx) => {
+        setTaskState(prev => ({ ...prev, [idx]: !prev[idx] }));
+    };
+
+    return html`
+        <div class="container animate-fade-in">
+             <${NavBar} onBack=${onBack} title=${`Week ${weekData.id}: ${theme}`} />
+             
+             <div class="card" style=${{ marginBottom: '32px', textAlign: 'center' }}>
+                <p class="hero-quote">"${quote}"</p>
+                <p style=${{ color: 'var(--text-secondary)', marginTop: '-20px' }}>— ${author}</p>
+             </div>
+
+             <div class="dashboard-grid">
+                <!-- Description -->
+                <div>
+                   <h3 style=${{ marginBottom: '16px' }}>Focus</h3>
+                   <p style=${{ fontSize: '1.1rem', lineHeight: '1.8' }}>${description}</p>
+                </div>
+
+                <!-- Artist Date & Tasks -->
+                <div class="card">
+                     <h3 style=${{ marginBottom: '24px' }}>Creative Tasks</h3>
+                     <div style=${{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        ${tasks.map((task, idx) => html`
+                            <label class="task-item">
+                                <div class="checkbox-wrapper">
+                                    <input type="checkbox" checked=${!!taskState[idx]} onChange=${() => toggleTask(idx)} />
+                                    <span class="custom-checkbox"></span>
+                                </div>
+                                <span class="task-text ${taskState[idx] ? 'strikethrough' : ''}">${task}</span>
+                            </label>
+                        `)}
+                     </div>
+                </div>
+             </div>
+        </div>
+    `;
+};
+
+const Dashboard = ({ onNavigate }) => {
     const today = new Date();
     const todayStr = getLocalYMD(today);
     const diffTime = Math.abs(today - START_DATE);
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     const currentWeekNum = Math.min(12, Math.max(1, Math.ceil(diffDays / 7)));
 
-    let completedCount = 0;
-    for (let i = 0; i < 84; i++) {
-        const { dateStr } = getDayInfo(i);
-        if (window.localStorage.getItem(getStorageKey(`mp_${dateStr}`)) === 'true') {
-            completedCount++;
-        }
-    }
-    const progressPercent = (completedCount / 84) * 100;
-
-    const weekData = WEEKS_DATA.find(w => w.id === currentWeekNum) || WEEKS_DATA[0];
-    const [morningPagesDone] = useSmartState(false, `mp_${todayStr}`, user);
+    const [morningPagesDone] = useSmartState(false, `mp_${todayStr}`);
+    const weekData = WEEKS_DATA.find(w => w.id === currentWeekNum);
 
     return html`
-        <div class="container animate-fade-in dashboard-layout">
-            <header class="dashboard-header">
+        <div class="container animate-fade-in">
+            <${NavBar} title="Dashboard" />
+            
+            <div class="dashboard-header">
                 <div>
-                    <h1>The Artist's Way</h1>
-                    <p>Welcome back, ${user ? (user.displayName || 'Creator') : 'Creator'}.</p>
+                    <h1>Good Morning, Writer.</h1>
+                    <p>Day ${diffDays} • Week ${currentWeekNum}: ${weekData.theme}</p>
                 </div>
-                <div>
-                    ${user && html`
-                        <div class="btn btn-sm btn-ghost" onClick=${onLogout}>Sign Out</div>
-                    `}
-                </div>
-            </header>
+            </div>
 
             <div class="dashboard-grid">
-                <!-- Left Column -->
-                <div class="dashboard-left">
-                     <div class="card progress-card">
-                        <span class="section-title">Your Progress</span>
-                        <${ProgressRing} radius=${80} stroke=${12} progress=${progressPercent} />
-                        <div style=${{ marginTop: '16px' }}>
-                             <h3>Day ${diffDays}</h3>
-                             <p>You are in Week ${currentWeekNum}</p>
+                <!-- Left Column: Today's Focus -->
+                <div class="dashboard-layout">
+                    <div class="card card-clickable ${morningPagesDone ? 'complete' : ''}" onClick=${() => onNavigate('daily', todayStr)}>
+                        <h3 style=${{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem', color: morningPagesDone ? '#000' : 'var(--accent-color)' }}>
+                            Today's Priority
+                        </h3>
+                        <h2 style=${{ fontSize: '2.5rem', margin: '16px 0', color: morningPagesDone ? '#000' : '#fff' }}>
+                            Morning Pages
+                        </h2>
+                        <div style=${{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            ${morningPagesDone ? html`
+                                <${CheckCircle} size=${24} color="#000" />
+                                <span style=${{ fontWeight: 600, color: '#000' }}>Completed</span>
+                            ` : html`
+                                <${Edit3} size=${24} />
+                                <span>Write 750 words</span>
+                            `}
                         </div>
-                     </div>
+                    </div>
+
+                    <div class="progress-card">
+                        <span class="section-title">Weekly Progress</span>
+                        <div class="progress-ring-container">
+                             <!-- Placeholder for real chart -->
+                             <div class="progress-ring-circle" style=${{ width: '100%', height: '100%', borderRadius: '50%', border: '8px solid var(--card-bg)', borderTopColor: 'var(--accent-color)' }}></div>
+                             <div class="progress-text">
+                                <span class="progress-number">3/7</span>
+                                <span class="progress-label">Days</span>
+                             </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Right Column -->
-                <div class="dashboard-right">
-                    <span class="section-title">Today's Focus</span>
-                    
-                    <div class="card card-clickable action-card" onClick=${() => onNavigate('daily', todayStr)} style=${{
-            border: morningPagesDone ? '1px solid var(--success-color)' : '1px solid var(--accent-color)',
-            background: morningPagesDone ? 'var(--success-bg)' : 'rgba(157, 127, 230, 0.1)',
-            display: 'flex', alignItems: 'center', gap: '32px', marginBottom: '32px'
-        }}>
-                        <div style=${{
-            background: morningPagesDone ? 'var(--success-color)' : 'var(--accent-color)',
-            minWidth: 64, height: 64, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: morningPagesDone ? '#000' : '#fff'
-        }}>
-                            <${morningPagesDone ? CheckIcon : Edit3} size=${32} />
-                        </div>
-                        <div>
-                            <h2 style=${{ marginBottom: 8, fontSize: '1.8rem' }}>${morningPagesDone ? "Completed" : "Morning Pages"}</h2>
-                            <p style=${{ fontSize: '1.1rem', color: 'var(--text-primary)' }}>
-                                ${morningPagesDone ? "Well done. You've cleared your mind for the day." : "Write your 3 morning pages to unlock this day."}
-                            </p>
-                        </div>
-                        <div style=${{ marginLeft: 'auto' }}>
-                             <${ChevronLeft} size=${24} style=${{ transform: 'rotate(180deg)' }} />
-                        </div>
+                <!-- Right Column: Week Overview -->
+                <div class="dashboard-layout">
+                    <div class="card">
+                        <h3 style=${{ marginBottom: '16px' }}>Current Theme: <span style=${{ color: 'var(--accent-color)' }}>${weekData.theme}</span></h3>
+                        <p style=${{ marginBottom: '24px' }}>${weekData.description.substring(0, 120)}...</p>
+                        <button class="btn btn-outline" style=${{ width: '100%' }} onClick=${() => onNavigate('weekly', currentWeekNum)}>
+                            View Week Tasks
+                        </button>
                     </div>
 
                     <span class="section-title">Quick Actions</span>
@@ -534,70 +369,16 @@ const Dashboard = ({ onNavigate, user, onLogout, syncStatus }) => {
     `;
 };
 
-const WeekView = ({ weekId, onBack, user, syncStatus }) => {
+const WeeklyReview = ({ weekId, onBack }) => {
     const weekData = WEEKS_DATA.find(w => w.id === parseInt(weekId)) || WEEKS_DATA[0];
-    const [tasksState, setTasksState] = useSmartState({}, `tasks_week_${weekData.id}`, user);
-
-    const info = getDayInfo((weekData.id - 1) * 7);
-    const reminderUrl = generateGoogleCalendarUrl(
-        `Artist Date (Week ${weekData.id})`,
-        `Time for your artist date! Theme: ${weekData.theme}. ${weekData.description}`,
-        info.date.toISOString()
-    );
-
-    const toggleTask = (index) => setTasksState(prev => ({ ...prev, [index]: !prev[index] }));
-
-    return html`
-        <div class="container animate-fade-in">
-             <${NavBar} onBack=${onBack} title=${`Week ${weekData.id}: ${weekData.theme}`} user=${user} syncStatus=${syncStatus} />
-            
-             <div class="card">
-                <blockquote style=${{ marginBottom: '32px', paddingBottom: '24px', borderBottom: '1px solid var(--border-color)', fontSize: '1.4rem', fontFamily: 'Georgia, serif', fontStyle: 'italic', color: '#fff' }}>
-                    "${weekData.description}"
-                </blockquote>
-
-                <div style=${{ background: 'rgba(255,255,255,0.05)', padding: '24px', borderRadius: '16px', marginBottom: '32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                     <div>
-                        <h3 style=${{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <${CalendarPlus} size=${24} /> Artist Date Reminder
-                        </h3>
-                        <p>Don't forget to schedule your weekly solo artist date.</p>
-                     </div>
-                     <a href=${reminderUrl} target="_blank" class="btn btn-outline">
-                        Add to Google Calendar
-                     </a>
-                </div>
-
-                <h3 style=${{ marginBottom: '24px', fontSize: '1.5rem' }}>Weekly Tasks</h3>
-                <div style=${{ display: 'flex', flexDirection: 'column', gap: '0' }}>
-                    ${weekData.tasks.map((task, idx) => html`
-                        <div class="task-item" key=${idx} onClick=${() => toggleTask(idx)} style=${{ cursor: 'pointer' }}>
-                             <div class="checkbox-wrapper" style=${{ marginTop: '2px' }}>
-                                <input type="checkbox" checked=${!!tasksState[idx]} readOnly />
-                                <div class="custom-checkbox"></div>
-                            </div>
-                            <div class="task-text ${tasksState[idx] ? 'strikethrough' : ''}" style=${{ color: tasksState[idx] ? 'var(--text-secondary)' : 'var(--text-primary)' }}>
-                                ${task}
-                            </div>
-                        </div>
-                    `)}
-                </div>
-            </div>
-        </div>
-    `;
-};
-
-const WeeklyReview = ({ weekId, onBack, user }) => {
-    const weekData = WEEKS_DATA.find(w => w.id === parseInt(weekId)) || WEEKS_DATA[0];
-    const [summary, setSummary] = useSmartState("", `review_week_${weekData.id}`, user);
+    const [summary, setSummary] = useSmartState("", `review_week_${weekData.id}`);
 
     // Get all 7 days of entries
     const entries = [];
     for (let i = 0; i < 7; i++) {
         const dayIdx = (weekData.id - 1) * 7 + i;
         const info = getDayInfo(dayIdx);
-        // We peek directly into localStorage for speed/simplicity in this review view
-        // usage of hook would require 7 hooks which is messy in a loop
+        // We peek directly into localStorage for speed/simplicity
         const content = window.localStorage.getItem(getStorageKey(`journal_${info.dateStr}`)) || "";
         if (content.trim()) {
             entries.push({ ...info, content });
@@ -606,11 +387,11 @@ const WeeklyReview = ({ weekId, onBack, user }) => {
 
     return html`
         <div class="container animate-fade-in">
-             <${NavBar} onBack=${onBack} title=${`Review: Week ${weekData.id}`} user=${user} />
+             <${NavBar} onBack=${onBack} title=${`Review: Week ${weekData.id}`} />
             
              <div style=${{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '32px', height: 'calc(100vh - 140px)' }}>
                 <!-- Left: Read Past Entries -->
-                <div class="card" style=${{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div class="card" style=${{ overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '24px', paddingRight: '12px' }}>
                     <h3 style=${{ borderBottom: '1px solid var(--border-color)', paddingBottom: '16px' }}>Morning Pages (${entries.length}/7)</h3>
                     ${entries.length === 0 ? html`<p>No entries found for this week.</p>` : null}
                     ${entries.map(entry => html`
@@ -643,26 +424,11 @@ const WeeklyReview = ({ weekId, onBack, user }) => {
 };
 
 const App = () => {
-    // Auth State
-    const { user, loading, login, logout } = useAuth();
-    // Trigger global download on login
-    useGlobalSync(user);
-
-    // Global Sync Status Listener
-    const [syncStatus, setSyncStatus] = useState('idle');
-    useEffect(() => {
-        const handler = (e) => setSyncStatus(e.detail);
-        window.addEventListener('sync-status', handler);
-        return () => window.removeEventListener('sync-status', handler);
-    }, []);
+    // Auth State (Local Mock)
+    const { user, loading } = useAuth();
 
     // Routing
     const [route, setRoute] = useState({ view: 'landing', params: null });
-
-    // Always show landing page on refresh/new visit unless logged in logic
-    // Actually, let's keep the existing flow: Landing -> Dashboard
-    // But if logged in, we land on dashboard?
-    // Let's keep it manual start for now to show the nice landing page.
 
     const navigate = (view, params = null) => {
         setRoute({ view, params });
@@ -681,58 +447,17 @@ const App = () => {
         return html`<div style=${{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>Loading...</div>`;
     }
 
-    const handleDebugClick = async () => {
-        if (!user) return alert("Not logged in");
-        try {
-            alert("Fetching cloud data...");
-            const q = query(collection(db, 'users', user.uid, 'data'));
-            const snapshot = await getDocs(q);
-            let msg = `Cloud Data (${snapshot.size} items):\n`;
-            snapshot.forEach(doc => {
-                const val = JSON.stringify(doc.data().value);
-                msg += `${doc.id}: ${val.substring(0, 20)}...\n`;
-            });
-            alert(msg);
-        } catch (e) {
-            alert("Fetch failed: " + e.message);
-        }
-    };
-
     return html`
         <div>
-            ${route.view === 'landing' && html`<${LandingPage} onStart=${handleStart} onLogin=${login} user=${user} />`}
-            ${route.view === 'dashboard' && html`<${Dashboard} onNavigate=${navigate} user=${user} onLogout=${logout} syncStatus=${syncStatus} />`}
-            ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
-            ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
-            ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} syncStatus=${syncStatus} />`}
-            ${route.view === 'review' && html`<${WeeklyReview} weekId=${route.params} onBack=${() => navigate('dashboard')} user=${user} />`}
+            ${route.view === 'landing' && html`<${LandingPage} onStart=${handleStart} />`}
+            ${route.view === 'dashboard' && html`<${Dashboard} onNavigate=${navigate} />`}
+            ${route.view === 'calendar' && html`<${CalendarView} onSelectDay=${(date) => navigate('daily', date)} onBack=${() => navigate('dashboard')} />`}
+            ${route.view === 'daily' && html`<${DailyEditor} dateStr=${route.params} onBack=${() => navigate('dashboard')} />`}
+            ${route.view === 'weekly' && html`<${WeekView} weekId=${route.params} onBack=${() => navigate('dashboard')} />`}
+            ${route.view === 'review' && html`<${WeeklyReview} weekId=${route.params} onBack=${() => navigate('dashboard')} />`}
         </div>
     `;
 };
 
-// Error Boundary for blank screen debugging
-class ErrorBoundary extends React.Component {
-    constructor(props) {
-        super(props);
-        this.state = { hasError: false, error: null };
-    }
-
-    static getDerivedStateFromError(error) {
-        return { hasError: true, error };
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return html`
-                <div style=${{ padding: 40, color: 'red' }}>
-                    <h1>Something went wrong</h1>
-                    <pre>${this.state.error.toString()}</pre>
-                </div>
-            `;
-        }
-        return this.props.children;
-    }
-}
-
 const root = createRoot(document.getElementById('root'));
-root.render(html`<${ErrorBoundary}><${App} /><//>`);
+root.render(html`<${ErrorBoundary}><${App} /></${ErrorBoundary}>`);
