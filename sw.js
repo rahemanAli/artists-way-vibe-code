@@ -1,4 +1,4 @@
-const CACHE_NAME = 'artist-way-v1.6'; // Bumped version
+const CACHE_NAME = 'artist-way-v1.7'; // Added Logo
 const URLS_TO_CACHE = [
     './',
     './index.html',
