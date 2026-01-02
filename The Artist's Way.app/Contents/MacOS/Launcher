@@ -1,0 +1,20 @@
+#!/bin/bash
+# Calculate the project directory (3 levels up from this script: Contents/MacOS/Launcher)
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && cd ../../../ && pwd )"
+
+# Start the server if needed using the existing script logic
+# We invoke the Start Journal.command logic but in background
+cd "$DIR"
+
+# Check if Port 8123 is already busy
+if ! lsof -i :8123 > /dev/null; then
+    # Start Server silently
+    /usr/bin/ruby -run -ehttpd . -p8123 > /dev/null 2>&1 &
+    sleep 1
+fi
+
+# Open Browser
+open "http://localhost:8123"
+
+# Exit cleanly
+exit 0

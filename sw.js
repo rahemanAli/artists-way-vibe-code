@@ -1,11 +1,11 @@
-const CACHE_NAME = 'artist-way-v1.7'; // Added Logo
+const CACHE_NAME = 'artist-way-v1.8'; // New Logo v2
 const URLS_TO_CACHE = [
     './',
     './index.html',
     './styles.css',
     './app.js',
     './data.js',
-    './logo.png',
+    './logo-v3.png',
     './manifest.json',
     'https://unpkg.com/lucide@latest',
     'https://esm.sh/react@18.2.0',

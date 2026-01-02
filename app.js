@@ -1,9 +1,25 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import htm from 'htm';
-import { WEEKS_DATA, START_DATE } from './data.js';
+import { WEEKS_DATA } from './data.js';
 
 const html = htm.bind(React.createElement);
+
+// --- Start Date Logic ---
+// We allow the user to have a dynamic start date (stored in localStorage)
+// If none exists, we default to TODAY so the calendar is accurate for new users.
+const getAppStartDate = () => {
+    const saved = window.localStorage.getItem('artist_way_start_date');
+    if (saved) return new Date(saved);
+
+    // Default to today (Midnight)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    window.localStorage.setItem('artist_way_start_date', today.toISOString());
+    return today;
+};
+
+const START_DATE = getAppStartDate();
 
 // --- Icons (Wrapper for Vanilla Lucide) ---
 // Vanilla Lucide 'window.lucide' contains objects, not Components.
@@ -114,7 +130,7 @@ const NavBar = ({ onBack, title }) => html`
                     <${ArrowLeft} size=${18} /> Back
                 </div>
             ` : html`
-                <img src="./logo.png" alt="Logo" style=${{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--accent-color)' }} />
+                <img src="./logo-v3.png" alt="Logo" style=${{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid var(--accent-color)' }} />
             `}
             ${title && html`<h2 style=${{ margin: 0, fontSize: '1.5rem' }}>${title}</h2>`}
         </div>
