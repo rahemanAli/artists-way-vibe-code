@@ -6,20 +6,7 @@ import { WEEKS_DATA } from './data.js';
 const html = htm.bind(React.createElement);
 
 // --- Start Date Logic ---
-// We allow the user to have a dynamic start date (stored in localStorage)
-// If none exists, we default to TODAY so the calendar is accurate for new users.
-const getAppStartDate = () => {
-    const saved = window.localStorage.getItem('artist_way_start_date');
-    if (saved) return new Date(saved);
-
-    // Default to today (Midnight)
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    window.localStorage.setItem('artist_way_start_date', today.toISOString());
-    return today;
-};
-
-const START_DATE = getAppStartDate();
+const START_DATE = new Date('2025-12-30T00:00:00'); // Fixed Start Date as requested
 
 // --- Icons (Wrapper for Vanilla Lucide) ---
 // Vanilla Lucide 'window.lucide' contains objects, not Components.
@@ -157,6 +144,10 @@ const CalendarView = ({ onSelectDay, onBack }) => {
     const totalDays = 12 * 7;
     const days = [];
 
+    // Calculate start offset (0 = Sunday, 1 = Monday, etc.)
+    const startDayOfWeek = START_DATE.getDay();
+    const spacers = Array(startDayOfWeek).fill(null);
+
     // Inefficient loop but okay for 84 items. 
     for (let i = 0; i < totalDays; i++) {
         const info = getDayInfo(i);
@@ -171,6 +162,9 @@ const CalendarView = ({ onSelectDay, onBack }) => {
                 ${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => html`
                     <div style=${{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.8rem', padding: '8px' }}>${d}</div>
                 `)}
+                <!-- Spacers to align first day -->
+                ${spacers.map(() => html`<div></div>`)}
+                
                 ${days.map(day => html`
                     <button 
                         class="day-cell ${day.done ? 'complete' : ''} ${day.dateStr === getLocalYMD(new Date()) ? 'today' : ''}" 
@@ -312,6 +306,8 @@ const Dashboard = ({ onNavigate }) => {
     const [morningPagesDone] = useSmartState(false, `mp_${todayStr}`);
     const weekData = WEEKS_DATA.find(w => w.id === currentWeekNum);
 
+    // Color logic: "complete" class usually handles background. 
+    // We strictly control text color here to ensure readability.
     return html`
         <div class="container animate-fade-in">
             <${NavBar} title="Dashboard" />
@@ -327,16 +323,16 @@ const Dashboard = ({ onNavigate }) => {
                 <!-- Left Column: Today's Focus -->
                 <div class="dashboard-layout">
                     <div class="card card-clickable ${morningPagesDone ? 'complete' : ''}" onClick=${() => onNavigate('daily', todayStr)}>
-                        <h3 style=${{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem', color: morningPagesDone ? '#000' : 'var(--accent-color)' }}>
+                        <h3 style=${{ textTransform: 'uppercase', letterSpacing: '1px', fontSize: '0.9rem', color: morningPagesDone ? '#fff' : 'var(--accent-color)', opacity: morningPagesDone ? 0.9 : 1 }}>
                             Today's Priority
                         </h3>
-                        <h2 style=${{ fontSize: '2.5rem', margin: '16px 0', color: morningPagesDone ? '#000' : '#fff' }}>
+                        <h2 style=${{ fontSize: '2.5rem', margin: '16px 0', color: '#fff' }}>
                             Morning Pages
                         </h2>
                         <div style=${{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                             ${morningPagesDone ? html`
-                                <${CheckCircle} size=${24} color="#000" />
-                                <span style=${{ fontWeight: 600, color: '#000' }}>Completed</span>
+                                <${CheckCircle} size=${24} color="#fff" />
+                                <span style=${{ fontWeight: 600, color: '#fff' }}>Completed</span>
                             ` : html`
                                 <${Edit3} size=${24} />
                                 <span>Write 750 words</span>
